@@ -1,0 +1,75 @@
+#create dataframe using toDF()
+
+#df_airlines=spark.read.format("csv").option("header","True").option("delimiter","|").option("inferSchema","True").load("dbfs:/databricks-datasets/airlines")
+df_airlines=spark.read.format("csv").option("header","True").option("delimiter","|").option("inferSchema","True").load("dbfs:/databricks-datasets/airlines")
+df_airlines.show()    
+
+columns = ["language","users_count"]
+data = [("Java", "20000"), ("Python", "100000"), ("Scala", "3000")]
+rdd = spark.sparkContext.parallelize(data)
+list=[]
+for element in rdd.collect():
+    list.append(element)
+print(list[0])
+    
+#df_RDD = rdd.toDF()
+#df_RDD.printSchema()
+
+columns = ["language","users_count"]
+df_RDD_schema = rdd.toDF(columns)
+
+df_RDD_schema.printSchema()
+
+df_RDD2 = spark.createDataFrame(rdd).toDF(*columns)
+
+df_RDD2.printSchema()
+
+#Create DataFrame from List Collection
+
+df_Data = spark.createDataFrame(data).toDF(*columns)
+df_Data.printSchema()
+
+#Using createDataFrame() from SparkSession from data collection
+
+df_Data2 = spark.createDataFrame(data).toDF(*columns)
+df_Data2.printSchema()
+
+#Using createDataFrame() with the Row type
+
+from pyspark.sql import SparkSession, Row
+rowData = map(lambda x: Row(*x), data) 
+df_Data3 = spark.createDataFrame(rowData,columns)
+df_Data3.printSchema()
+
+#Create DataFrame with schema
+
+from pyspark.sql.types import StructType,StructField, StringType, IntegerType
+data2 = [("James","","Smith","36636","M",3000),
+    ("Michael","Rose","","40288","M",4000),
+    ("Robert","","Williams","42114","M",4000),
+    ("Maria","Anne","Jones","39192","F",4000),
+    ("Jen","Mary","Brown","","F",-1)
+  ]
+
+schema = StructType([ \
+    StructField("firstname",StringType(),True), \
+    StructField("middlename",StringType(),True), \
+    StructField("lastname",StringType(),True), \
+    StructField("id", StringType(), True), \
+    StructField("gender", StringType(), True), \
+    StructField("salary", IntegerType(), True) \
+  ])
+ 
+df = spark.createDataFrame(data=data2,schema=schema)
+df.printSchema()
+df.show(truncate=False)
+
+#Creating DataFrame from CSV
+
+df_csv = spark.read.csv("/src/resources/file.csv")
+df2 = spark.read.text("/src/resources/file.txt")
+df2 = spark.read.json("/src/resources/file.json")
+
+
+
+
