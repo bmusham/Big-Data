@@ -1,0 +1,101 @@
+# Databricks notebook source
+dbutils.fs.ls("dbfs:/databricks-datasets/flights/")
+df_airlines = spark.read.format("csv").option("header","True").load("dbfs:/databricks-datasets/flights/departuredelays.csv")
+#df_airlines.show()
+df_airlines.printSchema()
+#df_airlines.createOrReplaceTempView("flights")
+#display(spark.sql("select * from flights limit 10"))
+
+
+#modify date column to mm-dd-yyyy:hhmm
+from pyspark.sql.functions import *
+df_airlines = spark.read.format("csv").option("header","True").load("dbfs:/databricks-datasets/flights/departuredelays.csv")
+df_airlines = df_airlines.withColumn('date',concat(col('date').substr(1, 2),lit('-'),col('date').substr(3, 2),lit('-'),lit('2022'),lit(' '),col('date').substr(5, 2),lit(':'),col('date').substr(7, 2)))
+#df_airlines.select(col("date"),to_timestamp(col("date"),"MM-dd-yyyy hh:mm").alias("date")).show()
+#df_airlines=df_airlines.withColumn("date",to_timestamp("date","mm-dd-yyyy hh:mm")) 
+
+
+df_airlines.printSchema()
+df_airlines.show()
+
+
+#get the distribution delays by destination
+df_airlines.createOrReplaceTempView("delays")
+sql_str="select destination, count(delay) as delay from delays where delay>0 " + \
+"group by destination order by delay"
+spark.sql(sql_str).show(truncate=False)
+#df_destination_delay.show()
+
+
+
+from pyspark.sql.functions import *
+df_airlines = spark.read.format("csv").option("header","True").load("dbfs:/databricks-datasets/flights/departuredelays.csv")
+df_airlines = df_airlines.withColumn('date',concat(col('date').substr(1, 2),lit('-'),col('date').substr(3, 2),lit('-'),lit('2022'),lit(' '),col('date').substr(5, 2),lit(':'),col('date').substr(7, 2)))
+df_dist_delay = df_airlines.select("delay","destination").where("delay>0").groupby("destination").count().orderBy(["destination"],ascending =[True]).show()
+
+
+from pyspark.sql.functions import *
+from pyspark.sql.window import *
+spark.conf.set("spark.sql.legacy.timeParserPolicy","LEGACY")
+
+df_airlines = spark.read.format("csv").option("header","True").load("dbfs:/databricks-datasets/flights/departuredelays.csv")
+df_airlines = df_airlines.withColumn('date',concat(col('date').substr(1, 2),lit('-'),col('date').substr(3, 2),lit('-'),lit('2022'),lit(' '),col('date').substr(5, 2),lit(':'),col('date').substr(7, 2)))
+
+df_airlines=df_airlines.withColumn("date",to_timestamp(col("date"),"mm-dd-yyyy hh:mm")) 
+df_airlines.printSchema()
+
+df_airlines.createOrReplaceTempView("delays")
+sql_str="select destination,date, max(delay) as delay from delays where delay>0 " + \
+"group by destination,date"
+spark.sql(sql_str).show()
+
+
+
+from pyspark.sql.functions import *
+from pyspark.sql.window import *
+spark.conf.set("spark.sql.legacy.timeParserPolicy","LEGACY")
+
+df_airlines = spark.read.format("csv").option("header","True").load("dbfs:/databricks-datasets/flights/departuredelays.csv")
+df_airlines = df_airlines.withColumn('date',concat(col('date').substr(1, 2),lit('-'),col('date').substr(3, 2),lit('-'),lit('2022'),lit(' '),col('date').substr(5, 2),lit(':'),col('date').substr(7, 2)))
+
+df_airlines=df_airlines.withColumn("date",to_timestamp(col("date"),"mm-dd-yyyy hh:mm")) 
+df_airlines.printSchema()
+
+df_airlines.createOrReplaceTempView("delays")
+sql_str="select destination,weekofyear(date) as week_num, max(delay) as delay from delays where delay>0 " + \
+"group by destination,weekofyear(date)"
+spark.sql(sql_str).show()
+#df_destination_delay.show()
+
+
+
+
+from pyspark.sql.functions import *
+from pyspark.sql.window import *
+spark.conf.set("spark.sql.legacy.timeParserPolicy","LEGACY")
+
+df_airlines = spark.read.format("csv").option("header","True").load("dbfs:/databricks-datasets/flights/departuredelays.csv")
+df_airlines = df_airlines.withColumn('date',concat(col('date').substr(1, 2),lit('-'),col('date').substr(3, 2),lit('-'),lit('2022'),lit(' '),col('date').substr(5, 2),lit(':'),col('date').substr(7, 2)))
+
+df_airlines=df_airlines.withColumn("date",to_timestamp(col("date"),"mm-dd-yyyy hh:mm")) 
+
+df_week_delay = df_airlines.select("delay","destination",weekofyear("date")).where("delay>0").groupby("destination",weekofyear("date")).max().orderBy(["destination"],ascending =[True]).show()
+
+
+
+#identify origin and destination with lot of delays
+from pyspark.sql.functions import *
+from pyspark.sql.window import *
+spark.conf.set("spark.sql.legacy.timeParserPolicy","LEGACY")
+
+df_airlines = spark.read.format("csv").option("header","True").load("dbfs:/databricks-datasets/flights/departuredelays.csv")
+df_airlines = df_airlines.withColumn('date',concat(col('date').substr(1, 2),lit('-'),col('date').substr(3, 2),lit('-'),lit('2022'),lit(' '),col('date').substr(5, 2),lit(':'),col('date').substr(7, 2)))
+
+df_airlines=df_airlines.withColumn("date",to_timestamp(col("date"),"mm-dd-yyyy hh:mm")) 
+df_airlines=df_airlines.withColumn("delay",df_airlines.delay.cast('integer'))
+
+df_top_delay = df_airlines.select("origin","destination","delay").where("delay>0").groupby("origin","destination").max("delay").limit(5).show()
+
+
+
+
